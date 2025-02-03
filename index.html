@@ -11,9 +11,17 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <!-- Read in geojson data stored as variables in external js files. 
      Cannot easily export list ordered by län from QGIS which means either exporting individual files and then copyimng them into one file or just read them in individually-->
-    <script type="text/javascript" src="./resources/BebrData.js"></script>
+    <!--<script type="text/javascript" src="./resources/BebrData.js"></script>-->
+    <script type="text/javascript" src="./resources/BebrP1.js"></script>
+    <script type="text/javascript" src="./resources/BebrP2.js"></script>
 
     <style>
+        :root{
+            --raaOrange: #C94A18;
+            --raaYellow: #ffb219;
+            --raaBlue: #00567E;
+            --raaGreen: #008578;
+        }
         html, body {
             height: 95%;
         }
@@ -26,7 +34,8 @@
             padding: 5px;
         }
         #maindisplay {
-            height: 100%
+            height: 100%;
+            border: 2px solid var(--raaOrange);
         }
         #map { 
             height: 100%;
