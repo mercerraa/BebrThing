@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>RAÄ Bebygelse registret</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="description" content="" />
+    <!-- <link rel="stylesheet" type="text/css" href="style.css" /> -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <!-- Make sure you put this AFTER Leaflet's CSS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- Read in geojson data stored as variables in external js files. 
+     Cannot easily export list ordered by län from QGIS which means either exporting individual files and then copyimng them into one file or just read them in individually-->
+    <script type="text/javascript" src="./resources/BebrData.js"></script>
+
+    <style>
+        html, body {
+            height: 95%;
+        }
+        #logo {
+            display: inline-block;
+        }
+        #headline{
+            display: inline-block;
+            font-size: 30px;
+            padding: 5px;
+        }
+        #maindisplay {
+            height: 100%
+        }
+        #map { 
+            height: 100%;
+            width: 50%;
+            float: left;
+            display: inline-block;
+        }
+        #searchpanel {
+            height: 20%;
+            width: 48%;
+            padding: 5px;
+            float: right;
+        }
+        #infopanel {
+            height: 80%;
+            width: 48%;
+            padding: 5px;
+            float: right;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Set up basic page elements-->
+    <div id="logo"><img src="./resources/RAA_logo_farg_rgb-950px.jpg" alt="RAÄ logo" style="height:50px;"> <div id="headline">Bebyggelseregistret</div></div>
+    <div id="maindisplay">
+        <div id="map"></div>
+        <div id="searchpanel">
+            <form onsubmit="searchID(event)">
+                <label for="searchIDInput">Sök efter ID:</label>
+                <input type="text" id="searchIDInput" placeholder="ID nummer" required>
+                <button type="submit">Sök</button>
+            </form><br>
+            <form onsubmit="searchNamn(event)">
+                <label for="searchNmInput">Sök efter namn:</label>
+                <input type="text" id="searchNmInput" placeholder="namn" required>
+                <button type="submit">Sök</button>
+            </form><br>
+            <form onsubmit="searchByggBet(event)">
+                <label for="searchBBInput">Sök efter byggnadsbeteckning:</label>
+                <input type="text" id="searchBBInput" placeholder="byggnadsbetckning" required>
+                <button type="submit">Sök</button>
+            </form>
+
+        </div>
+        <div id="infopanel"></div>
+    </div>
+    <!--Main script for creating map and displaying data-->
+    <script>
+        /* Create empty map surface */
+        startPos = [63, 19];
+        startZoom = 5;
+        var map = L.map('map').setView(startPos, startZoom);
+        /* Add OSM map */
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(map);
+        
+        /* Add geojson data*/
+        /* Point data syle */
+        var geojsonMarkerOptions = {
+            radius: 4,
+            fillColor: "#C94A18",
+            color: "#ffb219",
+            weight: 1,
+            opacity: 1,
+            fillOpacity: 0.8
+        };
+        /* Polygon data style */
+        var geojsonPolygonOptions = {
+            color: "#C94A18",
+            weight: 1,
+            opacity: 1,
+            fillColor: "#00567E",
+            fillOpacity: 0.8,
+        }
+
+        function dataStore(name, points, polygons) {
+            this.name = name;
+            this.points = points;
+            this.polygons = polygons
+        }
+
+        function setUpLayers(data_store, add = false) {
+            data_store.layerGroup = L.layerGroup();
+            data_store.pointLayer = L.geoJSON(data_store.points, {
+                renderer: L.svg(),
+                pointToLayer: function (feature, latlng) {
+                    return L.circleMarker(latlng, geojsonMarkerOptions);
+                },
+                onEachFeature: onEachFeature
+            }).addTo(data_store.layerGroup);
+            data_store.polygonLayer = L.geoJSON(data_store.polygons, {
+                renderer: L.canvas(),
+                style: geojsonPolygonOptions,
+                onEachFeature: onEachFeature
+            }).addTo(data_store.layerGroup); 
+            if (add == true) {data_store.layerGroup.addTo(map);}
+        }
+
+        let stores = [];
+        const Blekinge = new dataStore("Blekinge", pointBlekinge, polygonBlekinge);
+        setUpLayers(Blekinge);
+        stores.push(Blekinge);
+        const Dalarna = new dataStore("Dalarna", pointDalarna, polygonDalarna);
+        setUpLayers(Dalarna);
+        stores.push(Dalarna);
+        const Gotland = new dataStore("Gotland", pointGotland, polygonGotland);
+        setUpLayers(Gotland);
+        stores.push(Gotland);
+        const Gavleborg = new dataStore("Gävleborg", pointGavleborg, polygonGavleborg);
+        setUpLayers(Gavleborg);
+        stores.push(Gavleborg);
+        const Halland = new dataStore("Halland", pointHalland, polygonHalland);
+        setUpLayers(Halland);
+        stores.push(Halland);
+        const Jamtland = new dataStore("Jämtland", pointJamtland, polygonJamtland);
+        setUpLayers(Jamtland);
+        stores.push(Jamtland);
+        const Jonkoping = new dataStore("Jönköping", pointJonkoping, polygonJonkoping);
+        setUpLayers(Jonkoping);
+        stores.push(Jonkoping);
+        const Kalmar = new dataStore("Kalmar", pointKalmar, polygonKalmar);
+        setUpLayers(Kalmar);
+        stores.push(Kalmar);
+        const Kronoberg = new dataStore("Kronoberg", pointKronoberg, polygonKronoberg);
+        setUpLayers(Kronoberg);
+        stores.push(Kronoberg);
+        const Norrbotten = new dataStore("Norrbotten", pointNorrbotten, polygonNorrbotten);
+        setUpLayers(Norrbotten);
+        stores.push(Norrbotten);
+        const Skane = new dataStore("Skåne", pointSkane, polygonSkane);
+        setUpLayers(Skane);
+        stores.push(Skane);
+        const Stockholm = new dataStore("Stockholm", pointStockholm, polygonStockholm);
+        setUpLayers(Stockholm);
+        stores.push(Stockholm);
+        const Sodermanland = new dataStore("Södermanland", pointSodermanland, polygonSodermanland);
+        setUpLayers(Sodermanland);
+        stores.push(Sodermanland);
+        const Uppsala = new dataStore("Uppsala", pointUppsala, polygonUppsala);
+        setUpLayers(Uppsala);
+        stores.push(Uppsala);
+        const Varmland = new dataStore("Värmland", pointVarmland, polygonVarmland);
+        setUpLayers(Varmland);
+        stores.push(Varmland);
+        const Vasterbotten = new dataStore("Västerbotten", pointVasterbotten, polygonVasterbotten);
+        setUpLayers(Vasterbotten);
+        stores.push(Vasterbotten);
+        const Vasternorrland = new dataStore("Västernorrland", pointVasternorrland, polygonVasternorrland);
+        setUpLayers(Vasternorrland);
+        stores.push(Vasternorrland);
+        const Vastmanland = new dataStore("Västmanland", pointVastmanland, polygonVastmanland);
+        setUpLayers(Vastmanland);
+        stores.push(Vastmanland);
+        const VastraGotaland = new dataStore("Västra Götaland", pointVastraGotaland, polygonVastraGotaland);
+        setUpLayers(VastraGotaland);
+        stores.push(VastraGotaland);
+        const Orebro = new dataStore("Örebro", pointOrebro, polygonOrebro);
+        setUpLayers(Orebro);
+        stores.push(Orebro);
+        const Ostergotland = new dataStore("Östergötland", pointOstergotland, polygonOstergotland);
+        setUpLayers(Ostergotland);
+        stores.push(Ostergotland);
+
+
+
+        var layerControl = L.control.layers({},
+        {
+            "Blekinge": Blekinge.layerGroup,
+            "Dalarna": Dalarna.layerGroup,
+            "Gotland": Gotland.layerGroup,
+            "Gävleborg": Gavleborg.layerGroup,
+            "Halland": Halland.layerGroup,
+            "Jämtland": Jamtland.layerGroup,
+            "Jönköping": Jonkoping.layerGroup,
+            "Kalmar": Kalmar.layerGroup,
+            "Kronoberg": Kronoberg.layerGroup,
+            "Norrbotten": Norrbotten.layerGroup,
+            "Skåne": Skane.layerGroup,
+            "Stockholm": Stockholm.layerGroup,
+            "Södermanland": Sodermanland.layerGroup,
+            "Uppsala": Uppsala.layerGroup,
+            "Värmland": Varmland.layerGroup,
+            "Västerbotten": Vasterbotten.layerGroup,
+            "Västernorrland": Vasternorrland.layerGroup,
+            "Västmanland": Vastmanland.layerGroup,
+            "Västra Götaland": VastraGotaland.layerGroup,
+            "Örebro": Orebro.layerGroup,
+            "Östergötland": Ostergotland.layerGroup},
+        {collapsed: false}
+        ).addTo(map);
+
+        layerControl.expand();
+        var scaleControl = L.control.scale({imperial: false}).addTo(map);
+        
+        (function() {
+            var control = new L.Control({position:'topleft'});
+            control.onAdd = function(map) {
+                    var azoom = L.DomUtil.create('a','resetzoom');
+                    azoom.textContent = "RESET ZOOM";
+                    L.DomEvent
+                        .disableClickPropagation(azoom)
+                        .addListener(azoom, 'click', function() {
+                            map.setView(startPos, startZoom);
+                        },azoom);
+                    return azoom;
+                };
+            return control;
+        }()).addTo(map);
+
+        /* Functions used to display geojson data */
+
+        function onEachFeature(feature, layer) {
+            if (feature.properties && feature.properties.namn) {
+                layer.bindPopup("Namn: " + feature.properties.namn);
+            } else if (feature.properties && feature.properties.id) {
+                layer.bindPopup("ID: " + feature.properties.id);
+            }
+
+            layer.on({
+                click: zoomToFeature
+            });
+        }
+
+        /* for sanitizing text to be written to DOM below */
+        function escapeHTML(str) {
+            str = String(str);
+            return str.replace(/[&<>"'/]/g, function (char) {
+                switch (char) {
+                    case '&': return '&amp;';
+                    case '<': return '&lt;';
+                    case '>': return '&gt;';
+                    case '"': return '&quot;';
+                    case "'": return '&#039;';
+                    case "/": return '&#x2F;';
+                }
+            });
+        }
+
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        // Function to accept and populate the form
+        function acceptParam() {
+        // Retrieve the query parameter "searchText"
+        const searchText = getQueryParam('uuid');
+
+        if (searchText) {
+            // Sanitize the input from the URL
+            const sanitizedText = escapeHTML(searchText);
+
+            // Fill the form with the sanitized text
+            document.getElementById('searchIDInput').value = sanitizedText;
+        }
+        }
+        // Trigger acceptParam when the page loads
+        window.onload = acceptParam;
+
+
+
+        function searchID(event) {
+            /* Search box*/
+            event.preventDefault();  // Prevent form submission (page refresh)
+            console.log(event)
+            const searchValue = escapeHTML(document.getElementById('searchIDInput').value).trim();  // Get the value from the input field
+            console.log("searchValue: ", searchValue)  // Debug only
+
+            let found = false;
+            /* Check active layers first */
+            for (let data_store of stores){
+                if (map.hasLayer(data_store.polygonLayer)) {
+                    for (let feature of data_store.polygons.features) {
+                            if (feature.properties.id && feature.properties.id.includes(searchValue)) {
+                                highlightFeature(feature);
+                                found = true;
+                                break;
+                            }
+                        }
+                    };
+                if (map.hasLayer(data_store.pointLayer) && found == false) {
+                    for (let feature of data_store.points.features) {
+                            if (feature.properties.id && feature.properties.id.includes(searchValue)) {
+                                highlightFeature(feature);
+                                found = true;
+                                break;
+                            }
+                        }
+                };
+            }
+            /* Check inactive layers */
+            if (found == false) {
+                for (let data_store of stores) {
+                    for (let feature of data_store.polygons.features) {
+                            if (feature.properties.id && feature.properties.id.includes(searchValue)) {
+                                highlightFeature(feature);
+                                found = true;
+                                data_store.layerGroup.addTo(map);
+                                break;
+                            }
+                        }
+                }
+            }
+            if (found == false) {
+                for (let data_store of stores) {
+                    for (let feature of data_store.points.features) {
+                            if (feature.properties.id && feature.properties.id.includes(searchValue)) {
+                                highlightFeature(feature);
+                                found = true;
+                                data_store.layerGroup.addTo(map);
+                                break;
+                            }
+                        }
+                }
+            }
+            if (found == false) {
+                document.getElementById("infopanel").textContent = searchValue + " not found.";
+            };
+        }   
+
+        function searchByggBet(event) {
+            /* Search box*/
+            event.preventDefault();  // Prevent form submission (page refresh)
+            
+            const searchValue = escapeHTML(document.getElementById('searchBBInput').value).trim();  // Get the value from the input field
+            console.log("searchValue: ", searchValue)  // Debug only
+
+            let found = false;
+            for (let data_store of stores){
+                if (map.hasLayer(data_store.pointLayer) && found == false) {
+                for (let feature of data_store.points.features) {
+                        if (feature.properties.byggnadsbeteckning && feature.properties.byggnadsbeteckning.includes(searchValue)) {
+                            highlightFeature(feature);
+                            found = true;
+                            break;
+                        }
+                    }
+                };
+            }
+            if (found == false) {
+                document.getElementById("infopanel").textContent =  searchValue + " not found.";
+            };
+        }
+
+        function normalizeString(str) {
+            if (str == null) {return '';}
+            return str
+                .normalize("NFD")  // Normalize for diacritics
+                .toLowerCase()     // Lowercase the string
+                .replace(/[^a-zA-Z0-9\s]/g, '')  // Remove non-alphanumeric characters
+                .replace(/\s+/g, ' ')  // Normalize spaces (e.g., multiple spaces to one)
+                .trim();             // Trim any leading or trailing whitespace
+            }
+
+        function searchNamn(event){
+            /* Search box*/
+            event.preventDefault();  // Prevent form submission (page refresh)
+            
+            const searchValue = normalizeString(document.getElementById('searchNmInput').value); 
+            console.log("searchValue: ", searchValue)  // Debug only
+
+            let found = false;
+            for (let data_store of stores){
+                if (map.hasLayer(data_store.polygonLayer)) {
+                    for (let feature of data_store.polygons.features) {
+                        const featureName = normalizeString(feature.properties.namn);
+                        console.log("featurename: ", featureName)
+                        if (feature.properties.namn && featureName.includes(searchValue)) {
+                            highlightFeature(feature);
+                            found = true;
+                            break;
+                            }
+                        }
+                    };
+                if (map.hasLayer(data_store.pointLayer) && found == false) {
+                for (let feature of data_store.points.features) {
+                    const featureName = normalizeString(feature.properties.namn);
+                    console.log("featurename: ", featureName)
+                    if (feature.properties.namn && featureName.includes(searchValue)) {
+                        highlightFeature(feature);
+                        found = true;
+                        break;
+                        }
+                    }
+                };
+            }
+            if (found == false) {
+                document.getElementById("infopanel").textContent = searchValue + " not found." ;
+            };
+        }
+
+        function zoomToFeature(e) {
+            /* When a map feature (geojson object) is clicked on the infopanel displays the attributes and the map zooms to the object */
+            //console.log(e.target.feature.properties) // Not needed. Debugging only
+            /* Zoom to clicked object. Polygons have simple built-in function but points need a box defined to zoom to*/
+            console.log("e: ",e);
+            if (e.target.feature.geometry.type == "Polygon"){
+		        map.fitBounds(e.target.getBounds());
+            } else {
+                attrib = "<b>Byggnad</b><br>";
+                degMetre = 0.0018;
+                pointLon = e.target.feature.geometry.coordinates[0]
+                pointLat = e.target.feature.geometry.coordinates[1]
+                bbll = [pointLat - degMetre , pointLon - degMetre]
+                bbur = [pointLat + degMetre , pointLon + degMetre]
+                map.fitBounds([bbll, bbur])
+            }
+            /* Get attributes, except those showing urls and display them in infopanel */
+            attData = e.target.feature.properties;
+
+            let infoPanel = document.getElementById("infopanel");
+
+            // Clear the existing content by removing all child nodes
+            while (infoPanel.firstChild) {
+                infoPanel.removeChild(infoPanel.firstChild);
+            }
+
+            for (let x in attData) {
+                if (x == 'fid') { continue; }
+                if (x.includes("url")) { continue; }
+
+                let label = escapeHTML(x);  // Escape the label
+                let value = escapeHTML(attData[x]);  // Escape the value
+
+                let boldElem = document.createElement('b');
+                boldElem.textContent = label + ": ";
+
+                let textNode = document.createTextNode(value + " ");
+
+                // Create a line break element
+                let brElem = document.createElement('br');
+
+                // Append elements safely
+                infoPanel.appendChild(boldElem);
+                infoPanel.appendChild(textNode);
+                infoPanel.appendChild(brElem);
+            }
+	    }
+
+
+        function highlightFeature(foundFeat) {
+            /* Copy of zoomToFeature adjusted for object given by searchData*/
+            console.log("foundFeat: ", foundFeat)
+            if (foundFeat.geometry.type == "Polygon"){
+                var tempLayer = L.geoJSON(foundFeat);
+		        map.fitBounds(tempLayer.getBounds());
+            } else {
+                attrib = "<b>Byggnad</b><br>";
+                degMetre = 0.0018;
+                pointLon = foundFeat.geometry.coordinates[0]
+                pointLat = foundFeat.geometry.coordinates[1]
+                bbll = [pointLat - degMetre , pointLon - degMetre]
+                bbur = [pointLat + degMetre , pointLon + degMetre]
+                map.fitBounds([bbll, bbur])
+            }
+            //console.log(foundFeat.properties) // Debug only
+            attData = foundFeat.properties
+            
+            let infoPanel = document.getElementById("infopanel");
+
+            // Clear the existing content by removing all child nodes
+            while (infoPanel.firstChild) {
+                infoPanel.removeChild(infoPanel.firstChild);
+            }
+
+            for (let x in attData) {
+                if (x == 'fid') { continue; }
+                if (x.includes("url")) { continue; }
+
+                let label = escapeHTML(x);  // Escape the label
+                let value = escapeHTML(attData[x]);  // Escape the value
+
+                let boldElem = document.createElement('b');
+                boldElem.textContent = label + ": ";
+
+                let textNode = document.createTextNode(value + " ");
+
+                // Create a line break element
+                let brElem = document.createElement('br');
+
+                // Append elements safely
+                infoPanel.appendChild(boldElem);
+                infoPanel.appendChild(textNode);
+                infoPanel.appendChild(brElem);
+            }
+	    }
+
+    </script>
+</body>
+</html>
