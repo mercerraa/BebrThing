@@ -14,7 +14,7 @@ lang: sv-SE
 Bebyggelseregistret ska uppdateras men innan det nya registret kunde färdigställas upptäcktes alvarliga brister i det gamla, som då fick stängas.
 Det här projektet är en tillfällig lösning som ska ge användare utan GIS-kunskaper ett sätt att hämta information om objekt i registret.
 
-För GIS-kunniga användare rekommenderas geopackages från (RAÄs öppna data-portal)[https://www.raa.se/hitta-information/oppna-data/oppna-data-portal/].
+För GIS-kunniga användare rekommenderas geopackages från [RAÄs öppna data-portal](https://www.raa.se/hitta-information/oppna-data/oppna-data-portal/).
 
 # Användning
 
