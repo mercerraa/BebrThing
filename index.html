@@ -23,15 +23,22 @@
             --raaGreen: #008578;
         }
         html, body {
-            height: 95%;
+            height: 100%;
         }
-        #logo {
+        #ident {
+            display: flex;
+        }
+        #logo{
             display: inline-block;
+            height: 50px;
         }
         #headline{
             display: inline-block;
             font-size: 30px;
-            padding: 5px;
+            padding-top: 5px;
+            height: 50px;
+            line-height: 50px;
+            margin-left: auto;
         }
         #maindisplay {
             height: 100%;
@@ -60,24 +67,28 @@
 </head>
 <body>
     <!-- Set up basic page elements-->
-    <div id="logo"><img src="./resources/RAA_logo_farg_rgb-950px.jpg" alt="RAÄ logo" style="height:50px;"> <div id="headline">Bebyggelseregistret</div></div>
+    <div id="ident"><img id="logo" src="./resources/RAA_logo_farg_rgb-950px.jpg" alt="RAÄ logo"> <span id="headline">Bebyggelseregistret</span></div>
     <div id="maindisplay">
         <div id="map"></div>
         <div id="searchpanel">
-            <form onsubmit="searchID(event)">
-                <label for="searchIDInput">Sök efter ID:</label>
+            <form id="idsearch" onsubmit="searchID(event)">
+                <label for="searchIDInput">Sök efter UUID:</label>
                 <input type="text" id="searchIDInput" placeholder="ID nummer" required>
                 <button type="submit">Sök</button>
             </form><br>
-            <form onsubmit="searchNamn(event)">
+            <form id="namesearch" onsubmit="searchNamn(event)">
                 <label for="searchNmInput">Sök efter namn:</label>
                 <input type="text" id="searchNmInput" placeholder="namn" required>
                 <button type="submit">Sök</button>
             </form><br>
-            <form onsubmit="searchByggBet(event)">
+            <form id="byggbetsearch" onsubmit="searchByggBet(event)">
                 <label for="searchBBInput">Sök efter byggnadsbeteckning:</label>
                 <input type="text" id="searchBBInput" placeholder="byggnadsbetckning" required>
                 <button type="submit">Sök</button>
+            </form>
+            <br>
+            <form id="formreset">
+                <input type="button" onclick="resetFormFunction()" value="Tömma sökfälten">
             </form>
 
         </div>
@@ -86,39 +97,47 @@
     <!--Main script for creating map and displaying data-->
     <script>
         /* Create empty map surface */
-        startPos = [63, 19];
-        startZoom = 5;
-        var map = L.map('map').setView(startPos, startZoom);
-        /* Add OSM map */
+        startPos = [63, 19]; /* Coordinates in lat,lon for map centre*/
+        startZoom = 5; /*Initial zoom level where lower values means more zoomed out*/
+        var map = L.map('map').setView(startPos, startZoom); /*Create Leaflet map object*/
+        /* Add OSM map to map object */
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(map);
         
         /* Add geojson data*/
-        /* Point data syle */
+
+        /* Set up RAÄ colours */
+        let raaOrange = "#C94A18";
+        let raaYellow = "#ffb219";
+        let raaBlue = "#00567E";
+        let raaGreen = "#008578";
+        /* Create point marker object*/
         var geojsonMarkerOptions = {
             radius: 4,
-            fillColor: "#C94A18",
-            color: "#ffb219",
+            fillColor: raaOrange,
+            color: raaYellow,
             weight: 1,
             opacity: 1,
-            fillOpacity: 0.8
+            fillOpacity: 1
         };
-        /* Polygon data style */
+        /* Create polygon marker object*/
         var geojsonPolygonOptions = {
-            color: "#C94A18",
+            color: raaOrange,
             weight: 1,
             opacity: 1,
-            fillColor: "#00567E",
+            fillColor: raaBlue,
             fillOpacity: 0.8,
         }
 
+        /* JS object constructor for data objects. To be used for each län */
         function dataStore(name, points, polygons) {
             this.name = name;
             this.points = points;
             this.polygons = polygons
         }
-
+        /* Creates data object from GeoJson formatted variable read in by script(s) in html head*/
         function setUpLayers(data_store, add = false) {
-            data_store.layerGroup = L.layerGroup();
+            data_store.layerGroup = L.layerGroup();  /* Create Leaflet layer group for each län*/
+            /* Add point data (byggnader) för current län*/
             data_store.pointLayer = L.geoJSON(data_store.points, {
                 renderer: L.svg(),
                 pointToLayer: function (feature, latlng) {
@@ -126,15 +145,22 @@
                 },
                 onEachFeature: onEachFeature
             }).addTo(data_store.layerGroup);
+            /* Add polygon data (byggnadsminne) for current län*/
             data_store.polygonLayer = L.geoJSON(data_store.polygons, {
                 renderer: L.canvas(),
                 style: geojsonPolygonOptions,
                 onEachFeature: onEachFeature
             }).addTo(data_store.layerGroup); 
+            /* This will activate the current group when the page loads. Default is false*/
             if (add == true) {data_store.layerGroup.addTo(map);}
         }
 
-        let stores = [];
+        let stores = []; /*Create list of data objects. Used to loop through later*/
+        /* Explicitly set up a data store for each län using imported GeoJson data structure
+        Three lines repeat for each län:
+        - Create new data store using the previously constructed object
+        - Pass object to setUpLayers function - "Needs" to be done after the creation of the object
+        - Add the data store to the list/array of stores */
         const Blekinge = new dataStore("Blekinge", pointBlekinge, polygonBlekinge);
         setUpLayers(Blekinge);
         stores.push(Blekinge);
@@ -199,8 +225,7 @@
         setUpLayers(Ostergotland);
         stores.push(Ostergotland);
 
-
-
+        /* Add Leaflet layer control/table of contents*/
         var layerControl = L.control.layers({},
         {
             "Blekinge": Blekinge.layerGroup,
@@ -227,9 +252,10 @@
         {collapsed: false}
         ).addTo(map);
 
-        layerControl.expand();
-        var scaleControl = L.control.scale({imperial: false}).addTo(map);
+        layerControl.expand();/* Stops leaflet collapsing the layer control*/
+        var scaleControl = L.control.scale({imperial: false}).addTo(map); /*Adds a scale bar to the map*/
         
+        /* Reset the map view to the inital zoom and centre. Appears as text below the zoom controls +-*/
         (function() {
             var control = new L.Control({position:'topleft'});
             control.onAdd = function(map) {
@@ -247,6 +273,7 @@
 
         /* Functions used to display geojson data */
 
+        /*On mouse click on point or polygon a pop-up is displayed and the zoomToFeature function is triggered*/
         function onEachFeature(feature, layer) {
             if (feature.properties && feature.properties.namn) {
                 layer.bindPopup("Namn: " + feature.properties.namn);
@@ -258,7 +285,6 @@
                 click: zoomToFeature
             });
         }
-
         /* for sanitizing text to be written to DOM below */
         function escapeHTML(str) {
             str = String(str);
@@ -274,39 +300,53 @@
             });
         }
 
+        /* takes a string and normalises it to lower case, 
+        removes non-name characters and removes leading and trailing whitespace.
+        Aids comparing manually entered search string (namn) with text stored in field "namn" */
+        function normalizeString(str) {
+            if (str == null) {return '';}
+            return str
+                .normalize("NFD")  // Normalize for diacritics
+                .toLowerCase()     // Lowercase the string
+                .replace(/[^a-zA-Z0-9\s]/g, '')  // Remove non-alphanumeric characters
+                .replace(/\s+/g, ' ')  // Normalize spaces (e.g., multiple spaces to one)
+                .trim();             // Trim any leading or trailing whitespace
+            }
+        
+        /* Extracts http url component after ?*/
         function getQueryParam(param) {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get(param);
         }
 
-        // Function to accept and populate the form
+        /*Function to accept and populate the idsearch form if uuid is passed in url */
         function acceptParam() {
-        // Retrieve the query parameter "searchText"
+        /* Get uuid as "searchText" */
         const searchText = getQueryParam('uuid');
 
         if (searchText) {
-            // Sanitize the input from the URL
+            /* Sanitize the input from the URL */
             const sanitizedText = escapeHTML(searchText);
-
-            // Fill the form with the sanitized text
+            /* Fill the form with the sanitized text */
             document.getElementById('searchIDInput').value = sanitizedText;
         }
         }
-        // Trigger acceptParam when the page loads
+        /* Trigger acceptParam when the page loads */
         window.onload = acceptParam;
 
-
-
+        /* Search data store objects for uuid stored in field "id" */
         function searchID(event) {
             /* Search box*/
             event.preventDefault();  // Prevent form submission (page refresh)
-            console.log(event)
-            const searchValue = escapeHTML(document.getElementById('searchIDInput').value).trim();  // Get the value from the input field
-            console.log("searchValue: ", searchValue)  // Debug only
+            // console.log(event) // Debug only
+            /* Get the value from the input field */
+            const searchValue = escapeHTML(document.getElementById('searchIDInput').value).trim();  
+            // console.log("searchValue: ", searchValue) // Debug only
 
             let found = false;
-            /* Check active layers first */
-            for (let data_store of stores){
+            /* Check active layers first, beginning with polygon layer
+             as these tend to be considerably smaller. Intended to speed up performance.*/
+            for (let data_store of stores) {
                 if (map.hasLayer(data_store.polygonLayer)) {
                     for (let feature of data_store.polygons.features) {
                             if (feature.properties.id && feature.properties.id.includes(searchValue)) {
@@ -326,7 +366,8 @@
                         }
                 };
             }
-            /* Check inactive layers */
+            /* Check inactive layers 
+            Used primarily when uuid provided in url as there is no default active layer*/
             if (found == false) {
                 for (let data_store of stores) {
                     for (let feature of data_store.polygons.features) {
@@ -351,51 +392,21 @@
                         }
                 }
             }
+            /* Finally, if the search term cannot be matched to an existing uuid give feedback to user */
             if (found == false) {
                 document.getElementById("infopanel").textContent = searchValue + " not found.";
             };
         }   
 
-        function searchByggBet(event) {
-            /* Search box*/
-            event.preventDefault();  // Prevent form submission (page refresh)
-            
-            const searchValue = escapeHTML(document.getElementById('searchBBInput').value).trim();  // Get the value from the input field
-            console.log("searchValue: ", searchValue)  // Debug only
-
-            let found = false;
-            for (let data_store of stores){
-                if (map.hasLayer(data_store.pointLayer) && found == false) {
-                for (let feature of data_store.points.features) {
-                        if (feature.properties.byggnadsbeteckning && feature.properties.byggnadsbeteckning.includes(searchValue)) {
-                            highlightFeature(feature);
-                            found = true;
-                            break;
-                        }
-                    }
-                };
-            }
-            if (found == false) {
-                document.getElementById("infopanel").textContent =  searchValue + " not found.";
-            };
-        }
-
-        function normalizeString(str) {
-            if (str == null) {return '';}
-            return str
-                .normalize("NFD")  // Normalize for diacritics
-                .toLowerCase()     // Lowercase the string
-                .replace(/[^a-zA-Z0-9\s]/g, '')  // Remove non-alphanumeric characters
-                .replace(/\s+/g, ' ')  // Normalize spaces (e.g., multiple spaces to one)
-                .trim();             // Trim any leading or trailing whitespace
-            }
-
+        /* Searches through active layers of map looking for match in field "namn"
+        This search does not include inactive layers as many objects have similar or even matching names.
+        This limitation is intended to reduce the number of potential matches as only the first match is reported. */
         function searchNamn(event){
             /* Search box*/
             event.preventDefault();  // Prevent form submission (page refresh)
             
             const searchValue = normalizeString(document.getElementById('searchNmInput').value); 
-            console.log("searchValue: ", searchValue)  // Debug only
+            // console.log("searchValue: ", searchValue)  // Debug only
 
             let found = false;
             for (let data_store of stores){
@@ -426,12 +437,44 @@
                 document.getElementById("infopanel").textContent = searchValue + " not found." ;
             };
         }
+        /* Searches the field "byggnadsbeteckning" in the point(byggnad) layer.
+        Uncertain of the value of this search function. Could be removed? */
+        function searchByggBet(event) {
+            /* Search box*/
+            event.preventDefault();  // Prevent form submission (page refresh)
+            
+            const searchValue = escapeHTML(document.getElementById('searchBBInput').value).trim();  // Get the value from the input field
+            // console.log("searchValue: ", searchValue)  // Debug only
 
+            let found = false;
+            for (let data_store of stores){
+                if (map.hasLayer(data_store.pointLayer) && found == false) {
+                for (let feature of data_store.points.features) {
+                        if (feature.properties.byggnadsbeteckning && feature.properties.byggnadsbeteckning.includes(searchValue)) {
+                            highlightFeature(feature);
+                            found = true;
+                            break;
+                        }
+                    }
+                };
+            }
+            if (found == false) {
+                document.getElementById("infopanel").textContent =  searchValue + " not found.";
+            };
+        }
+
+        /*Clear the search windows of their current content*/
+        function resetFormFunction() {
+            document.getElementById("idsearch").reset();
+            document.getElementById("namesearch").reset();
+            document.getElementById("byggbetsearch").reset();
+        }
+        /* zoomToFeature takes an html event from the Leaflet map and zooms to the target. 
+        It also displays attributes for the object "under" the mose click position*/
         function zoomToFeature(e) {
             /* When a map feature (geojson object) is clicked on the infopanel displays the attributes and the map zooms to the object */
-            //console.log(e.target.feature.properties) // Not needed. Debugging only
+            // console.log(e.target.feature.properties) // Not needed. Debugging only
             /* Zoom to clicked object. Polygons have simple built-in function but points need a box defined to zoom to*/
-            console.log("e: ",e);
             if (e.target.feature.geometry.type == "Polygon"){
 		        map.fitBounds(e.target.getBounds());
             } else {
@@ -443,41 +486,40 @@
                 bbur = [pointLat + degMetre , pointLon + degMetre]
                 map.fitBounds([bbll, bbur])
             }
-            /* Get attributes, except those showing urls and display them in infopanel */
+            /* Get attributes of target object */
             attData = e.target.feature.properties;
-
+            /* Determine where to add the gathered information */
             let infoPanel = document.getElementById("infopanel");
 
-            // Clear the existing content by removing all child nodes
+            /* Clear the existing content by removing all child nodes*/
             while (infoPanel.firstChild) {
                 infoPanel.removeChild(infoPanel.firstChild);
             }
-
+            /* Create html object to add to the infoPanel */
             for (let x in attData) {
-                if (x == 'fid') { continue; }
-                if (x.includes("url")) { continue; }
+                if (x == 'fid') { continue; } /* Don't add the GeoPackage fid */
+                if (x.includes("url")) { continue; } /* Currently (Feb 2025) urls are not functional */
 
-                let label = escapeHTML(x);  // Escape the label
-                let value = escapeHTML(attData[x]);  // Escape the value
+                let label = escapeHTML(x);  /* sanitise the label text before adding to DOM*/
+                let value = escapeHTML(attData[x]);  /* Sanitise the field value before adding to DOM*/
 
                 let boldElem = document.createElement('b');
-                boldElem.textContent = label + ": ";
+                boldElem.textContent = label + ": "; /* Attribute field name */
 
-                let textNode = document.createTextNode(value + " ");
+                let textNode = document.createTextNode(value + " "); /* Attribute value */
 
-                // Create a line break element
-                let brElem = document.createElement('br');
+                let brElem = document.createElement('br'); /* Create a line break element */
 
-                // Append elements safely
+                /*  Append elements safely */
                 infoPanel.appendChild(boldElem);
                 infoPanel.appendChild(textNode);
                 infoPanel.appendChild(brElem);
             }
 	    }
-
-
+        /* Copy of zoomToFeature adjusted for object given by searchData rather than an event.
+        Need becasue the data structure is different and right now too much effort to dig into.
+        Lazy solution.*/
         function highlightFeature(foundFeat) {
-            /* Copy of zoomToFeature adjusted for object given by searchData*/
             console.log("foundFeat: ", foundFeat)
             if (foundFeat.geometry.type == "Polygon"){
                 var tempLayer = L.geoJSON(foundFeat);
@@ -491,32 +533,22 @@
                 bbur = [pointLat + degMetre , pointLon + degMetre]
                 map.fitBounds([bbll, bbur])
             }
-            //console.log(foundFeat.properties) // Debug only
+            // console.log(foundFeat.properties) // Debug only
             attData = foundFeat.properties
             
             let infoPanel = document.getElementById("infopanel");
-
-            // Clear the existing content by removing all child nodes
             while (infoPanel.firstChild) {
                 infoPanel.removeChild(infoPanel.firstChild);
             }
-
             for (let x in attData) {
                 if (x == 'fid') { continue; }
                 if (x.includes("url")) { continue; }
-
-                let label = escapeHTML(x);  // Escape the label
-                let value = escapeHTML(attData[x]);  // Escape the value
-
+                let label = escapeHTML(x); 
+                let value = escapeHTML(attData[x]);
                 let boldElem = document.createElement('b');
                 boldElem.textContent = label + ": ";
-
                 let textNode = document.createTextNode(value + " ");
-
-                // Create a line break element
                 let brElem = document.createElement('br');
-
-                // Append elements safely
                 infoPanel.appendChild(boldElem);
                 infoPanel.appendChild(textNode);
                 infoPanel.appendChild(brElem);
