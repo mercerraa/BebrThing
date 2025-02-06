@@ -491,7 +491,8 @@
                 let mapLink = document.createElement("button")
                 mapLink.data = '';
                 mapLink.innerHTML = 'zoom till:';
-                mapLink.onClick = zoomOnlyFeature(feature);
+                //mapLink.onClick = zoomOnlyFeature(feature);
+                mapLink.addEventListener('click', () => zoomOnlyFeature(feature))
                 infoPanel.appendChild(mapLink);
                 let brElem = document.createElement('br');
                 infoPanel.appendChild(brElem);
@@ -507,6 +508,7 @@
                     infoPanel.appendChild(textNode);
                     infoPanel.appendChild(brElem);
                 }
+                brElem = document.createElement('br');
                 infoPanel.appendChild(brElem);
             }
         }
@@ -629,7 +631,7 @@
             }
 	    }
         function zoomOnlyFeature(foundFeat) {
-            console.log("foundFeat: ", foundFeat)
+            console.log("Zoomonly: ", foundFeat)
             if (foundFeat.geometry.type == "Polygon"){
                 var tempLayer = L.geoJSON(foundFeat);
 		        map.fitBounds(tempLayer.getBounds());
