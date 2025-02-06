@@ -62,6 +62,7 @@
             padding: 5px;
             float: right;
             display: inline-block;
+            overflow-y: auto;
         }
     </style>
 </head>
@@ -76,7 +77,7 @@
                 <input type="text" id="searchIDInput" placeholder="ID nummer" required>
                 <button type="submit">Sök</button>
             </form><br>
-            <form id="namesearch" onsubmit="searchNamn(event)">
+            <form id="namesearch" onsubmit="searchNamnAll(event)">
                 <label for="searchNmInput">Sök efter namn:</label>
                 <input type="text" id="searchNmInput" placeholder="namn" required>
                 <button type="submit">Sök</button>
@@ -414,7 +415,7 @@
                 if (map.hasLayer(data_store.polygonLayer)) {
                     for (let feature of data_store.polygons.features) {
                         const featureName = normalizeString(feature.properties.namn);
-                        console.log("featurename: ", featureName)
+                        // console.log("featurename: ", featureName)
                         if (feature.properties.namn && featureName.includes(searchValue)) {
                             highlightFeature(feature);
                             found = true;
@@ -425,7 +426,7 @@
                 if (map.hasLayer(data_store.pointLayer) && found == false) {
                 for (let feature of data_store.points.features) {
                     const featureName = normalizeString(feature.properties.namn);
-                    console.log("featurename: ", featureName)
+                    // console.log("featurename: ", featureName)
                     if (feature.properties.namn && featureName.includes(searchValue)) {
                         highlightFeature(feature);
                         found = true;
@@ -438,6 +439,80 @@
                 document.getElementById("infopanel").textContent = searchValue + " not found." ;
             };
         }
+        function searchNamnAll(event){
+            /* Search box*/
+            event.preventDefault();  // Prevent form submission (page refresh)
+            
+            const searchValue = normalizeString(document.getElementById('searchNmInput').value); 
+            // console.log("searchValue: ", searchValue)  // Debug only
+
+            foundFeatureList = [];
+            for (let data_store of stores){
+                if (map.hasLayer(data_store.polygonLayer)) {
+                    for (let feature of data_store.polygons.features) {
+                        const featureName = normalizeString(feature.properties.namn);
+                        //console.log("featurename: ", featureName)
+                        if (feature.properties.namn && featureName.includes(searchValue)) {
+                            // highlightFeature(feature);
+                            foundFeatureList.push(feature);
+                            }
+                        }
+                    };
+                if (map.hasLayer(data_store.pointLayer) ) {
+                for (let feature of data_store.points.features) {
+                    const featureName = normalizeString(feature.properties.namn);
+                    //console.log("featurename: ", featureName)
+                    if (feature.properties.namn && featureName.includes(searchValue)) {
+                        // highlightFeature(feature);
+                        foundFeatureList.push(feature);
+                        }
+                    }
+                };
+            }
+            if (!foundFeatureList.length) {
+                document.getElementById("infopanel").textContent = searchValue + " not found." ;
+            };
+
+            let infoPanel = document.getElementById("infopanel");
+            while (infoPanel.firstChild) {
+               infoPanel.removeChild(infoPanel.firstChild);
+            }
+            //console.log('length: ', foundFeatureList.length, foundFeatureList)
+            let count = 1;
+            for (let feature of foundFeatureList) {
+                //console.log('feature: ' , feature);
+                attData = [
+                    {namn:feature.properties.namn}, {id:feature.properties.id},
+                    {kommun:feature.properties.kommun}, {lan:feature.properties.lan}, 
+                    {huvudgrupp:feature.properties.huvudgrupp}];
+                //propertyNames = Object.getOwnPropertyNames(attData);
+                //console.log('propertyName: ',propertyNames)
+                //console.log('attData: ',attData);
+                let mapLink = document.createElement("button")
+                mapLink.data = '';
+                mapLink.innerHTML = 'zoom till:';
+                //mapLink.onClick = zoomOnlyFeature(feature);
+                mapLink.addEventListener('click', () => zoomOnlyFeature(feature))
+                infoPanel.appendChild(mapLink);
+                let brElem = document.createElement('br');
+                infoPanel.appendChild(brElem);
+                for (let x in attData) {
+                    //console.log(Object.getOwnPropertyNames(attData[x]))
+                    let label = escapeHTML(Object.getOwnPropertyNames(attData[x])); 
+                    let value = attData[x][Object.getOwnPropertyNames(attData[x])];
+                    let boldElem = document.createElement('b');
+                    boldElem.textContent = label + ": ";
+                    let textNode = document.createTextNode(value + " ");
+                    let brElem = document.createElement('br');
+                    infoPanel.appendChild(boldElem);
+                    infoPanel.appendChild(textNode);
+                    infoPanel.appendChild(brElem);
+                }
+                brElem = document.createElement('br');
+                infoPanel.appendChild(brElem);
+            }
+        }
+
         /* Searches the field "byggnadsbeteckning" in the point(byggnad) layer.
         Uncertain of the value of this search function. Could be removed? */
         function searchByggBet(event) {
@@ -555,7 +630,21 @@
                 infoPanel.appendChild(brElem);
             }
 	    }
-
+        function zoomOnlyFeature(foundFeat) {
+            console.log("Zoomonly: ", foundFeat)
+            if (foundFeat.geometry.type == "Polygon"){
+                var tempLayer = L.geoJSON(foundFeat);
+		        map.fitBounds(tempLayer.getBounds());
+            } else {
+                attrib = "<b>Byggnad</b><br>";
+                degMetre = 0.0018;
+                pointLon = foundFeat.geometry.coordinates[0]
+                pointLat = foundFeat.geometry.coordinates[1]
+                bbll = [pointLat - degMetre , pointLon - degMetre]
+                bbur = [pointLat + degMetre , pointLon + degMetre]
+                map.fitBounds([bbll, bbur])
+            }
+        }
     </script>
 </body>
 </html>
