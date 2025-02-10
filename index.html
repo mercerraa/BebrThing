@@ -97,21 +97,21 @@
     </div>
     <!--Main script for creating map and displaying data-->
     <script>
-        /* Create empty map surface */
-        startPos = [63, 19]; /* Coordinates in lat,lon for map centre*/
-        startZoom = 5; /*Initial zoom level where lower values means more zoomed out*/
-        var map = L.map('map').setView(startPos, startZoom); /*Create Leaflet map object*/
-        /* Add OSM map to map object */
+        // Create empty map surface 
+        startPos = [63, 19]; // Coordinates in lat,lon for map centre
+        startZoom = 5; // Initial zoom level where lower values means more zoomed out
+        var map = L.map('map').setView(startPos, startZoom); //Create Leaflet map object
+        // Add OSM map to map object 
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(map);
         
-        /* Add geojson data*/
+        // Add geojson data
 
-        /* Set up RAÄ colours */
+        // Set up RAÄ colours 
         let raaOrange = "#C94A18";
         let raaYellow = "#ffb219";
         let raaBlue = "#00567E";
         let raaGreen = "#008578";
-        /* Create point marker object*/
+        // Create point marker object
         var geojsonMarkerOptions = {
             radius: 4,
             fillColor: raaOrange,
@@ -120,7 +120,7 @@
             opacity: 1,
             fillOpacity: 1
         };
-        /* Create polygon marker object*/
+        // Create polygon marker object
         var geojsonPolygonOptions = {
             color: raaOrange,
             weight: 1,
@@ -129,16 +129,16 @@
             fillOpacity: 0.8,
         }
 
-        /* JS object constructor for data objects. To be used for each län */
+        // JS object constructor for data objects. To be used for each län 
         function dataStore(name, points, polygons) {
             this.name = name;
             this.points = points;
             this.polygons = polygons
         }
-        /* Creates data object from GeoJson formatted variable read in by script(s) in html head*/
+        // Creates data object from GeoJson formatted variable read in by script(s) in html head
         function setUpLayers(data_store, add = false) {
-            data_store.layerGroup = L.layerGroup();  /* Create Leaflet layer group for each län*/
-            /* Add point data (byggnader) för current län*/
+            data_store.layerGroup = L.layerGroup();  // Create Leaflet layer group for each län
+            // Add point data (byggnader) för current län
             data_store.pointLayer = L.geoJSON(data_store.points, {
                 renderer: L.svg(),
                 pointToLayer: function (feature, latlng) {
@@ -146,22 +146,22 @@
                 },
                 onEachFeature: onEachFeature
             }).addTo(data_store.layerGroup);
-            /* Add polygon data (byggnadsminne) for current län*/
+            // Add polygon data (byggnadsminne) for current län
             data_store.polygonLayer = L.geoJSON(data_store.polygons, {
                 renderer: L.canvas(),
                 style: geojsonPolygonOptions,
                 onEachFeature: onEachFeature
             }).addTo(data_store.layerGroup); 
-            /* This will activate the current group when the page loads. Default is false*/
+            // This will activate the current group when the page loads. Default is false
             if (add == true) {data_store.layerGroup.addTo(map);}
         }
 
-        let stores = []; /*Create list of data objects. Used to loop through later*/
-        /* Explicitly set up a data store for each län using imported GeoJson data structure
-        Three lines repeat for each län:
-        - Create new data store using the previously constructed object
-        - Pass object to setUpLayers function - "Needs" to be done after the creation of the object
-        - Add the data store to the list/array of stores */
+        let stores = []; // Create list of data objects. Used to loop through later
+        // Explicitly set up a data store for each län using imported GeoJson data structure
+        // Three lines repeat for each län:
+        // - Create new data store using the previously constructed object
+        // - Pass object to setUpLayers function - "Needs" to be done after the creation of the object
+        // - Add the data store to the list/array of stores
         const Blekinge = new dataStore("Blekinge", pointBlekinge, polygonBlekinge);
         setUpLayers(Blekinge);
         stores.push(Blekinge);
@@ -226,7 +226,7 @@
         setUpLayers(Ostergotland);
         stores.push(Ostergotland);
 
-        /* Add Leaflet layer control/table of contents*/
+        // Add Leaflet layer control/table of contents
         var layerControl = L.control.layers({},
         {
             "Blekinge": Blekinge.layerGroup,
@@ -253,10 +253,10 @@
         {collapsed: false}
         ).addTo(map);
 
-        layerControl.expand();/* Stops leaflet collapsing the layer control*/
-        var scaleControl = L.control.scale({imperial: false}).addTo(map); /*Adds a scale bar to the map*/
+        layerControl.expand(); // Stops leaflet collapsing the layer control
+        var scaleControl = L.control.scale({imperial: false}).addTo(map); // Adds a scale bar to the map
         
-        /* Reset the map view to the inital zoom and centre. Appears as text below the zoom controls +-*/
+        // Reset the map view to the inital zoom and centre. Appears as text below the zoom controls +-
         (function() {
             var control = new L.Control({position:'topleft'});
             control.onAdd = function(map) {
@@ -272,9 +272,9 @@
             return control;
         }()).addTo(map);
 
-        /* Functions used to display geojson data */
+        // Functions used to display geojson data 
 
-        /*On mouse click on point or polygon a pop-up is displayed and the zoomToFeature function is triggered*/
+        // On mouse click on point or polygon a pop-up is displayed, the map zooms to the feature and attributes are displayed
         function onEachFeature(feature, layer) {
             if (feature.properties && feature.properties.namn) {
                 layer.bindPopup("Namn: " + feature.properties.namn);
@@ -283,10 +283,11 @@
             }
 
             layer.on({
-                click: zoomToFeature
+                click: zoomToEvent
             });
         }
-        /* for sanitizing text to be written to DOM below */
+
+        // For sanitizing text to be written to DOM below 
         function escapeHTML(str) {
             str = String(str);
             return str.replace(/[&<>"'/]/g, function (char) {
@@ -301,9 +302,9 @@
             });
         }
 
-        /* takes a string and normalises it to lower case, 
-        removes non-name characters and removes leading and trailing whitespace.
-        Aids comparing manually entered search string (namn) with text stored in field "namn" */
+        // takes a string and normalises it to lower case, 
+        // removes non-name characters and removes leading and trailing whitespace.
+        // Aids comparing manually entered search string (namn) with text stored in field "namn" 
         function normalizeString(str) {
             if (str == null) {return '';}
             return str
@@ -320,34 +321,35 @@
             return urlParams.get(param);
         }
 
-        /*Function to accept and populate the idsearch form if uuid is passed in url */
-        /* According to Johan Nordinge the uuids were created by Ksamsök and are used across all RAÄ data*/
+        //Function to accept and populate the idsearch form if uuid is passed in url 
+        // According to Johan Nordinge the uuids were created by Ksamsök and are used across all RAÄ data
         function acceptParam() {
-        /* Get uuid as "searchText" */
+        // Get uuid as "searchText" 
         const searchText = getQueryParam('uuid');
 
         if (searchText) {
-            /* Sanitize the input from the URL */
+            // Sanitize the input from the URL 
             const sanitizedText = escapeHTML(searchText);
-            /* Fill the form with the sanitized text */
+            // Fill the form with the sanitized text 
             document.getElementById('searchIDInput').value = sanitizedText;
         }
         }
-        /* Trigger acceptParam when the page loads */
+        // Trigger acceptParam when the page loads 
         window.onload = acceptParam;
 
-        /* Search data store objects for uuid stored in field "id" */
+        // SEARCH FUNCTIONS
+        // Search data store objects for uuid stored in field "id" 
         function searchID(event) {
-            /* Search box*/
+            // Search box
             event.preventDefault();  // Prevent form submission (page refresh)
             // console.log(event) // Debug only
-            /* Get the value from the input field */
+            // Get the value from the input field 
             const searchValue = escapeHTML(document.getElementById('searchIDInput').value).trim();  
             // console.log("searchValue: ", searchValue) // Debug only
 
             let found = false;
-            /* Check active layers first, beginning with polygon layer
-             as these tend to be considerably smaller. Intended to speed up performance.*/
+            // Check active layers first, beginning with polygon layer
+            // as these tend to be considerably smaller. Intended to speed up performance.
             for (let data_store of stores) {
                 if (map.hasLayer(data_store.polygonLayer)) {
                     for (let feature of data_store.polygons.features) {
@@ -368,8 +370,8 @@
                         }
                 };
             }
-            /* Check inactive layers 
-            Used primarily when uuid provided in url as there is no default active layer*/
+            // Check inactive layers 
+            // Used primarily when uuid provided in url as there is no default active layer
             if (found == false) {
                 for (let data_store of stores) {
                     for (let feature of data_store.polygons.features) {
@@ -394,76 +396,36 @@
                         }
                 }
             }
-            /* Finally, if the search term cannot be matched to an existing uuid give feedback to user */
+            // Finally, if the search term cannot be matched to an existing uuid give feedback to user 
             if (found == false) {
                 document.getElementById("infopanel").textContent = searchValue + " not found.";
             };
         }   
 
-        /* Searches through active layers of map looking for match in field "namn"
-        This search does not include inactive layers as many objects have similar or even matching names.
-        This limitation is intended to reduce the number of potential matches as only the first match is reported. */
-        function searchNamn(event){
-            /* Search box*/
-            event.preventDefault();  // Prevent form submission (page refresh)
-            
-            const searchValue = normalizeString(document.getElementById('searchNmInput').value); 
-            // console.log("searchValue: ", searchValue)  // Debug only
-
-            let found = false;
-            for (let data_store of stores){
-                if (map.hasLayer(data_store.polygonLayer)) {
-                    for (let feature of data_store.polygons.features) {
-                        const featureName = normalizeString(feature.properties.namn);
-                        // console.log("featurename: ", featureName)
-                        if (feature.properties.namn && featureName.includes(searchValue)) {
-                            highlightFeature(feature);
-                            found = true;
-                            break;
-                            }
-                        }
-                    };
-                if (map.hasLayer(data_store.pointLayer) && found == false) {
-                for (let feature of data_store.points.features) {
-                    const featureName = normalizeString(feature.properties.namn);
-                    // console.log("featurename: ", featureName)
-                    if (feature.properties.namn && featureName.includes(searchValue)) {
-                        highlightFeature(feature);
-                        found = true;
-                        break;
-                        }
-                    }
-                };
-            }
-            if (found == false) {
-                document.getElementById("infopanel").textContent = searchValue + " not found." ;
-            };
-        }
+        // Searches through active layers of map looking for match in field "namn"
+        // This search does not include inactive layers as many objects have similar or even matching names.
+        // This limitation is intended to reduce the number of potential matches as only the first match is reported. 
         function searchNamnAll(event){
-            /* Search box*/
+            // Search box
             event.preventDefault();  // Prevent form submission (page refresh)
             
-            const searchValue = normalizeString(document.getElementById('searchNmInput').value); 
+            const searchValue = normalizeString(document.getElementById('searchNmInput').value); // Exact match of string not needed
             // console.log("searchValue: ", searchValue)  // Debug only
 
-            foundFeatureList = [];
-            for (let data_store of stores){
-                if (map.hasLayer(data_store.polygonLayer)) {
+            foundFeatureList = []; // Empty list will be populated wit features matching search criteria
+            for (let data_store of stores){ // Loop through all stored data
+                if (map.hasLayer(data_store.polygonLayer)) { // Select only those polygon data sets active in the map
                     for (let feature of data_store.polygons.features) {
                         const featureName = normalizeString(feature.properties.namn);
-                        //console.log("featurename: ", featureName)
                         if (feature.properties.namn && featureName.includes(searchValue)) {
-                            // highlightFeature(feature);
                             foundFeatureList.push(feature);
                             }
                         }
                     };
-                if (map.hasLayer(data_store.pointLayer) ) {
+                if (map.hasLayer(data_store.pointLayer) ) { // Select only those point layers active in th emap
                 for (let feature of data_store.points.features) {
                     const featureName = normalizeString(feature.properties.namn);
-                    //console.log("featurename: ", featureName)
                     if (feature.properties.namn && featureName.includes(searchValue)) {
-                        // highlightFeature(feature);
                         foundFeatureList.push(feature);
                         }
                     }
@@ -472,32 +434,24 @@
             if (!foundFeatureList.length) {
                 document.getElementById("infopanel").textContent = searchValue + " not found." ;
             };
-
+            // Add basic info and a button for each matching feature
             let infoPanel = document.getElementById("infopanel");
             while (infoPanel.firstChild) {
                infoPanel.removeChild(infoPanel.firstChild);
             }
-            //console.log('length: ', foundFeatureList.length, foundFeatureList)
-            let count = 1;
             for (let feature of foundFeatureList) {
-                //console.log('feature: ' , feature);
                 attData = [
                     {namn:feature.properties.namn}, {id:feature.properties.id},
                     {kommun:feature.properties.kommun}, {lan:feature.properties.lan}, 
-                    {huvudgrupp:feature.properties.huvudgrupp}];
-                //propertyNames = Object.getOwnPropertyNames(attData);
-                //console.log('propertyName: ',propertyNames)
-                //console.log('attData: ',attData);
-                let mapLink = document.createElement("button")
+                    {huvudgrupp:feature.properties.huvudgrupp}]; // Gets the attributes of the feature
+                let mapLink = document.createElement("button") // Creates a button in html
                 mapLink.data = '';
                 mapLink.innerHTML = 'zoom till:';
-                //mapLink.onClick = zoomOnlyFeature(feature);
-                mapLink.addEventListener('click', () => zoomOnlyFeature(feature))
+                mapLink.addEventListener('click', () => zoomFeature(feature)) // Adds zoom function to button
                 infoPanel.appendChild(mapLink);
-                let brElem = document.createElement('br');
+                let brElem = document.createElement('br'); // Create line break html element
                 infoPanel.appendChild(brElem);
                 for (let x in attData) {
-                    //console.log(Object.getOwnPropertyNames(attData[x]))
                     let label = escapeHTML(Object.getOwnPropertyNames(attData[x])); 
                     let value = attData[x][Object.getOwnPropertyNames(attData[x])];
                     let boldElem = document.createElement('b');
@@ -509,14 +463,14 @@
                     infoPanel.appendChild(brElem);
                 }
                 brElem = document.createElement('br');
-                infoPanel.appendChild(brElem);
+                infoPanel.appendChild(brElem); // Add a line after each feature in list
             }
         }
 
-        /* Searches the field "byggnadsbeteckning" in the point(byggnad) layer.
-        Uncertain of the value of this search function. Could be removed? */
+        // Searches the field "byggnadsbeteckning" in the point(byggnad) layer.
+        // Uncertain of the value of this search function. Could be removed? 
         function searchByggBet(event) {
-            /* Search box*/
+            // Search box
             event.preventDefault();  // Prevent form submission (page refresh)
             
             const searchValue = escapeHTML(document.getElementById('searchBBInput').value).trim();  // Get the value from the input field
@@ -539,77 +493,24 @@
             };
         }
 
-        /*Clear the search windows of their current content*/
+        // Clear the search windows of their current content
         function resetFormFunction() {
             document.getElementById("idsearch").reset();
             document.getElementById("namesearch").reset();
             document.getElementById("byggbetsearch").reset();
         }
-        /* zoomToFeature takes an html event from the Leaflet map and zooms to the target. 
-        It also displays attributes for the object "under" the mose click position*/
-        function zoomToFeature(e) {
-            /* When a map feature (geojson object) is clicked on the infopanel displays the attributes and the map zooms to the object */
-            // console.log(e.target.feature.properties) // Not needed. Debugging only
-            /* Zoom to clicked object. Polygons have simple built-in function but points need a box defined to zoom to*/
-            if (e.target.feature.geometry.type == "Polygon"){
-		        map.fitBounds(e.target.getBounds());
-            } else {
-                attrib = "<b>Byggnad</b><br>";
-                degMetre = 0.0018;
-                pointLon = e.target.feature.geometry.coordinates[0]
-                pointLat = e.target.feature.geometry.coordinates[1]
-                bbll = [pointLat - degMetre , pointLon - degMetre]
-                bbur = [pointLat + degMetre , pointLon + degMetre]
-                map.fitBounds([bbll, bbur])
-            }
-            /* Get attributes of target object */
-            attData = e.target.feature.properties;
-            /* Determine where to add the gathered information */
-            let infoPanel = document.getElementById("infopanel");
 
-            /* Clear the existing content by removing all child nodes*/
-            while (infoPanel.firstChild) {
-                infoPanel.removeChild(infoPanel.firstChild);
-            }
-            /* Create html object to add to the infoPanel */
-            for (let x in attData) {
-                if (x == 'fid') { continue; } /* Don't add the GeoPackage fid */
-                if (x.includes("url")) { continue; } /* Currently (Feb 2025) urls are not functional */
-
-                let label = escapeHTML(x);  /* sanitise the label text before adding to DOM*/
-                let value = escapeHTML(attData[x]);  /* Sanitise the field value before adding to DOM*/
-
-                let boldElem = document.createElement('b');
-                boldElem.textContent = label + ": "; /* Attribute field name */
-
-                let textNode = document.createTextNode(value + " "); /* Attribute value */
-
-                let brElem = document.createElement('br'); /* Create a line break element */
-
-                /*  Append elements safely */
-                infoPanel.appendChild(boldElem);
-                infoPanel.appendChild(textNode);
-                infoPanel.appendChild(brElem);
-            }
+        // Convert event into feature and pass to highlightFeature()
+        // Used by mouse click on map object
+        function zoomToEvent(e) {
+            highlightFeature(e.target.feature)
 	    }
-        /* Copy of zoomToFeature adjusted for object given by searchData rather than an event.
-        Need becasue the data structure is different and right now too much effort to dig into.
-        Lazy solution.*/
+
+        // Displays selected feature's attributes in infopanel but first calls the zoomFeature() function
         function highlightFeature(foundFeat) {
-            console.log("foundFeat: ", foundFeat)
-            if (foundFeat.geometry.type == "Polygon"){
-                var tempLayer = L.geoJSON(foundFeat);
-		        map.fitBounds(tempLayer.getBounds());
-            } else {
-                attrib = "<b>Byggnad</b><br>";
-                degMetre = 0.0018;
-                pointLon = foundFeat.geometry.coordinates[0]
-                pointLat = foundFeat.geometry.coordinates[1]
-                bbll = [pointLat - degMetre , pointLon - degMetre]
-                bbur = [pointLat + degMetre , pointLon + degMetre]
-                map.fitBounds([bbll, bbur])
-            }
-            // console.log(foundFeat.properties) // Debug only
+            // console.log("foundFeat: ", foundFeat)
+            zoomFeature(foundFeat)
+            
             attData = foundFeat.properties
             
             let infoPanel = document.getElementById("infopanel");
@@ -630,13 +531,13 @@
                 infoPanel.appendChild(brElem);
             }
 	    }
-        function zoomOnlyFeature(foundFeat) {
-            console.log("Zoomonly: ", foundFeat)
-            if (foundFeat.geometry.type == "Polygon"){
+
+        // Zooms the map to the active feature
+        function zoomFeature(foundFeat) {
+            if (foundFeat.geometry.type == "Polygon"){ // Built-in for zooming to boundingbox of line or polygon
                 var tempLayer = L.geoJSON(foundFeat);
 		        map.fitBounds(tempLayer.getBounds());
-            } else {
-                attrib = "<b>Byggnad</b><br>";
+            } else { // Points have no bounding box and so an arbitrary box is defined
                 degMetre = 0.0018;
                 pointLon = foundFeat.geometry.coordinates[0]
                 pointLat = foundFeat.geometry.coordinates[1]
