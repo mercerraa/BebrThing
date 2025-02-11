@@ -519,19 +519,41 @@
             }
             for (let x in attData) {
                 if (x == 'fid') { continue; }
-                if (x.includes("url")) { continue; }
+                // if (x.includes("url")) { continue; }
                 let label = escapeHTML(x); 
                 let value = escapeHTML(attData[x]);
                 let boldElem = document.createElement('b');
                 boldElem.textContent = label + ": ";
-                let textNode = document.createTextNode(value + " ");
-                let brElem = document.createElement('br');
                 infoPanel.appendChild(boldElem);
-                infoPanel.appendChild(textNode);
+                if (x.includes("url")) { // URL attributes are lists of semi-colon separeted urls
+                    if (!!attData[x]) { // Some are null and split can't handle null
+                        createMultiUrl(x, label, infoPanel);
+                    }
+                }
+                else {
+                    let textNode = document.createTextNode(value + " ");
+                    infoPanel.appendChild(textNode);
+                }
+                let brElem = document.createElement('br');
                 infoPanel.appendChild(brElem);
             }
 	    }
-
+        // Loops through text list of semi-colon separated urls and creates links for each
+        function createMultiUrl(x, label, infoPanel) {
+            let xArray = attData[x].split(";");
+            // console.log("xArray: ", xArray)
+            for (let xText of xArray) {
+                let a = document.createElement('a');
+                let link = document.createTextNode(label);
+                a.appendChild(link);
+                a.title = label;
+                a.href = xText;
+                a.setAttribute('target', '_blank');
+                infoPanel.appendChild(a);
+                let textNode = document.createTextNode(", ");
+                infoPanel.appendChild(textNode);
+            }
+        }
         // Zooms the map to the active feature
         function zoomFeature(foundFeat) {
             if (foundFeat.geometry.type == "Polygon"){ // Built-in for zooming to boundingbox of line or polygon
